@@ -33,7 +33,7 @@ git submodule add YOUR_BLUEPRINT_REPO_URL
 
 ## Validation Monitoring
 
-The cloud build history for validation is listed [here](https://pantheon.corp.google.com/cloud-build/builds?folder=&organizationId=&project=anthos-blueprints-validation).
+The cloud build history for validation is listed under the `anthos-blueprints-validation project.
 
 The release candidates for anthoscli verified blueprints are listed [here](https://github.com/GoogleCloudPlatform/blueprints/releases)
 
