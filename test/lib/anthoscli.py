@@ -31,15 +31,10 @@ def download_anthoscli(version, gcloud=None):
     bin_dir = os.path.join(scratch_dir, "bin")
     os.makedirs(bin_dir, exist_ok=True)
 
-    url = (
-        "gs://gke-on-prem-staging/anthos-cli/v"
-        + version
-        + "-gke.0/anthoscli_linux_amd64-"
-        + version
-        + ".tar.gz"
-    )
+    url = "gs://gke-on-prem-staging/anthos-cli/v{version}-gke.0/anthoscli_linux_amd64-{version}.tar.gz".format(version=version)
+
     tarfile = os.path.join(scratch_dir, "anthoscli.tar.gz")
-    gcloud.download_from_gcs(url, tarfile)  # TODO: caching?
+    gcloud.download_from_gcs(url, tarfile)
     expanded = downloads.expand_tar(tarfile)
     anthoscli_path = os.path.join(bin_dir, "anthoscli")
     os.symlink(os.path.join(expanded, "anthoscli"), anthoscli_path)
@@ -64,6 +59,10 @@ class AnthosCLI(object):
 
     def apply(self, specdir):
         stdout = self.exec(["apply", "-f", specdir])
+        return stdout
+
+    def vet(self, specdir):
+        stdout = self.exec(["vet", "-f", specdir])
         return stdout
 
     def exec(self, args):

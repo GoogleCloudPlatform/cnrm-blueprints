@@ -46,6 +46,4 @@ def merge_dicts(l, r):
         if k in l and k in r:
             if isinstance(r[k], dict):
                 m[k] = merge_dicts(l[k], r[k])
-            else:
-                m[k] = r[k]
     return m

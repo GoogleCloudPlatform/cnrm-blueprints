@@ -1,0 +1,37 @@
+[
+  {
+    "stage": "alpha",
+    "blueprints": [
+      {
+        "name": "anthos-service-mesh-packages",
+        "branches": [
+          "master",
+          "release-1.4-asm"
+        ],
+        "tag-regex": "(1.4.\\d+)-asm.\\d+"
+      }
+    ],
+    "anthoscli-version": "0.0.16",
+    "release-candidate": {
+      "current": "anthoscli-alpha-rc1",
+      "next": "anthoscli-alpha-rc2"
+    }
+  },
+  {
+    "stage": "beta",
+    "blueprints": [
+      {
+        "name": "anthos-service-mesh-packages",
+        "branches": [
+          "release-1.5-asm"
+        ],
+        "tag-regex": "(1.5.\\d+)-asm.\\d+"
+      }
+    ],
+    "anthoscli-version": "0.1.10",
+    "release-candidate": {
+      "current": "anthoscli-beta-rc1",
+      "next": "anthoscli-beta-rc2"
+    }
+  }
+]

@@ -32,9 +32,7 @@ _workspace_dir = None
 
 
 def workspace_dir():
-    workspace = os.environ.get("WORKSPACE")
-    if workspace:
-        _workspace_dir = workspace
-    else:
-        _workspace_dir = tempfile.mkdtemp(prefix="tmp-e2e")
+    global _workspace_dir
+    if _workspace_dir is None:
+        _workspace_dir = os.environ.get("WORKSPACE") or tempfile.mkdtemp(prefix="tmp-e2e")
     return _workspace_dir

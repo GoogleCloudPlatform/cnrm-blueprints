@@ -66,6 +66,7 @@ class Gcloud(object):
         s = "Gcloud:" + self.bin
         return s
 
+    # add_to_path ensures that kubectl is on the provider environ
     def add_to_path(self, env):
         d = os.path.dirname(self.bin)
         env["PATH"] = d + ":" + env["PATH"]

@@ -1,4 +1,0 @@
-{
-  "current": "anthoscli-beta-rc1",
-  "next": "anthoscli-beta-rc2"
-}

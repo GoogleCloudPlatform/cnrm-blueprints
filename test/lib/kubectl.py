@@ -48,7 +48,6 @@ def download_kubectl(k8s_version):
     downloads.exec(["chmod", "+x", kubectl])
     kubectl_path = os.path.join(bin_dir, "kubectl")
     os.symlink(kubectl, kubectl_path)
-    # os.symlink(kubectl, "/bin/kubectl")
 
     return Kubectl(kubectl_path)
 
@@ -68,6 +67,7 @@ class Kubectl(object):
         s = "Kubectl:" + self.bin
         return s
 
+    # add_to_path ensures that kubectl is on the provider environ
     def add_to_path(self, env):
         d = os.path.dirname(self.bin)
         env["PATH"] = d + ":" + env["PATH"]
