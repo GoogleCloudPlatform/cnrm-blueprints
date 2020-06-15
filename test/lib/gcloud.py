@@ -104,6 +104,10 @@ class Gcloud(object):
         args = ["container", "clusters", "list"]
         return self.exec_and_parse_json(args)
 
+    def get_gke_cluster_creds(self, name, location, project):
+        args = ["container", "clusters", "get-credentials", name, "--zone", location, "--project", project]
+        return self.exec(args)
+
     def exec(self, args):
         return downloads.exec(
             [self.bin] + args, cwd=self.statedir, env=self.env

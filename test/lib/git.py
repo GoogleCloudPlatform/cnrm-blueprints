@@ -29,7 +29,7 @@ class Git(object):
         return "Git:" + downloads.exec(["which", "git"])
 
     def clone(self, repo, directory):
-        downloads.exec(["git", "clone", repo, directory])
+        downloads.exec(["git", "clone", "--recursive", repo, directory])
         self.statedir = directory
 
     def checkout(self, branch):
