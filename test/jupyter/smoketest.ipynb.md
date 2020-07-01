@@ -66,28 +66,37 @@ git.clone(repo_url, clone_directory)
 
 if not commit_sha:
   commit_sha = git.get_last_commit_hash()
-commit_msg = git.get_commit_message(commit_sha)
 
-m = re.compile("^Update submodule:\s*(.+)/(branches|tags)/(\S*).*$").match(commit_msg)
+updated_files = git.get_changed_files(commit_sha)
 
-blueprint = "anthos-service-mesh-packages"  # Use ASM as the default validation package
-blueprint_branch = "release-1.5-asm"   # Use ASM's latest release branch
-blueprint_tag = ""
-blueprint_mode = ""
-blueprint_revision = blueprint_branch
-if not m:
-  blueprint = m.group(1)  # the blueprint name
-  blueprint_mode = m.group(2) # branches or tags
-  blueprint_revision = m.group(3) # either the branch name or the tag name
-  blueprint_branch = blueprint_revision if blueprint_mode == "branches" else ""
-  blueprint_tag = blueprint_revision if blueprint_mode == "tags" else ""
+# TODO: Do not filter out patch packages. Instead, add validation to the patch packages using anthoscli export and kustomize
+packages = UpdatedPackages(clone_directory, updated_files).filter_out_patch_packages()
 
-release_candidate = ReleaseCandidate(clone_directory, blueprint, blueprint_branch, blueprint_tag)
-anthoscli_version = release_candidate.get_anthos_cli_version()
-submodule = blueprint if m and blueprint_mode == "tags" else "%s-%s" % (blueprint, blueprint_revision)
+if len(packages) == 0:
+  print("No Blueprints are updated with commit %s" % commit_sha)
+  update_state(state, {"new_rc": False})
+  # test infrastructure update, only run one package for validation
+  defaultBlueprint = ["asm-1.5"]
+  packages = UpdatedPackages(clone_directory, defaultBlueprint).filter_out_patch_packages()
+else:
+  update_state(state, {"new_rc": True})
+print("The packages to be validated:")
+print(packages)
+
+anthoscli_versions = set()
+for k, v in packages.items():
+  release_candidate = ReleaseCandidate(clone_directory, v.name)
+  anthoscli_versions.add(release_candidate.get_anthos_cli_version())
+
+if len(anthoscli_versions) == 0:
+  raise Exception("No Anthoscli versions found. Please check anthoscli-release-candidates.json file and make sure the blueprints are added.")
+if len(anthoscli_versions) > 1:
+  raise Exception("Multiple Anthoscli versions found for the updated packages!")
+anthoscli_version = list(anthoscli_versions)[0]
+print("anthoscli_version: %s" % anthoscli_version)
 
 if not anthoscli_version:
-  update_state(stage, {"anthoscli_version": anthoscli_version})
+  update_state(state, {"anthoscli_version": anthoscli_version})
 ```
 
 #### Install kubectl
@@ -160,9 +169,6 @@ state
 
 
 ```python
-# TODO: Validate the patch packages using anthoscli export and kustomize
-packages = Blueprint(clone_directory, submodule).filter_out_patch_packages()
-print(packages)
 clusters = []
 for package_path in packages:
   cluster_name = "btc-%s" % randint(0, 100) #btc stands for blueprints-test-cluster
@@ -239,11 +245,12 @@ for cluster_name in clusters:
 
 ```python
 if state["success"]:
-  git.checkout(branch)
-  release_candidate.update_release_candidate()
-  new_tag = release_candidate.get_current_release_candidate()
-  git.commit_and_push(branch, CONFIG_FILE, "Update the anthoscli release version to " + new_tag)
-  git.create_remote_tag(new_tag)
+  if state["new-rc"]:
+    git.checkout(branch)
+    release_candidate.update_release_candidate()
+    new_tag = release_candidate.get_current_release_candidate()
+    git.commit_and_push(branch, CONFIG_FILE, "Update the anthoscli release version to " + new_tag)
+    git.create_remote_tag(new_tag)
 else:
   print("Errors occurred while running validation test")
 

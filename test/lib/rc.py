@@ -18,25 +18,20 @@ import re
 CONFIG_FILE = "anthoscli-release-candidates.json"
 VERSION_PATTERN_REX = "(anthoscli-.+-rc)(\\d+)"
 
-class ReleaseCandidate(object):
-  def __init__(self, dir, repo, branch, tag):
+class ReleaseCandidate:
+  def __init__(self, dir, blueprint):
     self.file = dir + "/" + CONFIG_FILE
     with open(self.file) as f:
       self.data = json.load(f)
-      self.stage = self.get_launch_stage(repo, branch, tag)
+      self.stage = self.get_launch_stage(blueprint)
 
   def __repr__(self):
     return self.data
 
-  def get_launch_stage(self, repo, branch, tag):
+  def get_launch_stage(self, blueprint):
     for s in self.data:
-      for blueprint in s["blueprints"]:
-        if repo != blueprint["name"]:
-          continue
-        if branch and branch in blueprint["branches"]:
-          return s
-        if tag and blueprint["tag-regex"] and re.match(blueprint["tag-regex"], tag):
-          return s
+      if blueprint in s["blueprints"]:
+        return s
     return None
 
   def get_anthos_cli_version(self):
@@ -45,7 +40,8 @@ class ReleaseCandidate(object):
   def update_release_candidate(self):
     current = self.stage["release-candidate"]["next"]
     m = re.match(VERSION_PATTERN_REX, current)
-    next = re.sub(VERSION_PATTERN_REX, m.group(1) + str(int(m.group(2)) + 1),
+    next = re.sub(VERSION_PATTERN_REX,
+                  m.group(1) + str(int(m.group(2)) + 1),
                   current)
     self.stage["release-candidate"]["current"] = current
     self.stage["release-candidate"]["next"] = next

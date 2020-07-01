@@ -50,6 +50,12 @@ class Git(object):
     def get_last_commit_hash(self):
         return self.exec(["rev-parse", "HEAD"])
 
+    # return a list of changed file paths
+    def get_changed_files(self, revision):
+        files = self.exec(
+            ["show", "--pretty=", "--name-only", revision]).lstrip().rstrip()
+        return files.split("\n")
+
     def exec(self, args):
         return downloads.exec(
             [self.bin] + args, cwd=self.statedir, env=self.env
