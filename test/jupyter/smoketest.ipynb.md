@@ -137,6 +137,7 @@ if not "kpt_version" in state:
     update_state(state, { "kpt_version": "0.24.0" }) # TODO: How to get latest?
 
 kpt = download_kpt(state["kpt_version"], gcloud=gcloud, statedir=statedir) # TODO: How to get tagged version?
+gcloud.add_to_path(kpt.env)
 kpt
 ```
 
@@ -177,12 +178,6 @@ for package_path in packages:
   for setter in packages[package_path].setters:
     if "gcloud.container.cluster" == setter or "cluster-name" in setter:
       kpt.set(cluster_name, setter, cluster_name)
-    elif "gcloud.compute.zone" == setter or "gcloud.compute.location" == setter:
-      kpt.set(cluster_name, setter, state["zone"])
-    elif "gcloud.core.project" == setter:
-      kpt.set(cluster_name, setter, state["project"])
-    elif "gcloud.project.projectNumber" == setter:
-      kpt.set(cluster_name, setter, state["project_number"])
   kpt.list(cluster_name)
   clusters.append(cluster_name)
 ```
