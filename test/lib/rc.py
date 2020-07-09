@@ -18,41 +18,42 @@ import re
 CONFIG_FILE = "anthoscli-release-candidates.json"
 VERSION_PATTERN_REX = "(anthoscli-.+-rc)(\\d+)"
 
+
 class ReleaseCandidate:
-  def __init__(self, dir, blueprint):
-    self.file = dir + "/" + CONFIG_FILE
-    with open(self.file) as f:
-      self.data = json.load(f)
-      self.stage = self.get_launch_stage(blueprint)
+    def __init__(self, dir, blueprint):
+        self.file = dir + "/" + CONFIG_FILE
+        with open(self.file) as f:
+            self.data = json.load(f)
+            self.stage = self.get_launch_stage(blueprint)
 
-  def __repr__(self):
-    return self.data
+    def __repr__(self):
+        return self.data
 
-  def get_launch_stage(self, blueprint):
-    for s in self.data:
-      if blueprint in s["blueprints"]:
-        return s
-    return None
+    def get_launch_stage(self, blueprint):
+        for s in self.data:
+            if blueprint in s["blueprints"]:
+                return s
+        return None
 
-  def get_anthos_cli_version(self):
-    return None if not self.stage else str(self.stage["anthoscli-version"])
+    def get_anthos_cli_version(self):
+        return None if not self.stage else str(self.stage["anthoscli-version"])
 
-  def update_release_candidate(self):
-    current = self.stage["release-candidate"]["next"]
-    m = re.match(VERSION_PATTERN_REX, current)
-    next = re.sub(VERSION_PATTERN_REX,
-                  m.group(1) + str(int(m.group(2)) + 1),
-                  current)
-    self.stage["release-candidate"]["current"] = current
-    self.stage["release-candidate"]["next"] = next
+    def update_release_candidate(self):
+        current = self.stage["release-candidate"]["next"]
+        m = re.match(VERSION_PATTERN_REX, current)
+        next = re.sub(VERSION_PATTERN_REX,
+                      m.group(1) + str(int(m.group(2)) + 1),
+                      current)
+        self.stage["release-candidate"]["current"] = current
+        self.stage["release-candidate"]["next"] = next
 
-    for index, s in enumerate(self.data):
-      if s["stage"] == self.stage["stage"]:
-        self.data[index]["release-candidate"]["current"] = current
-        self.data[index]["release-candidate"]["next"] = next
+        for index, s in enumerate(self.data):
+            if s["stage"] == self.stage["stage"]:
+                self.data[index]["release-candidate"]["current"] = current
+                self.data[index]["release-candidate"]["next"] = next
 
-    with open(self.file, "w") as f:
-      json.dump(self.data, f, indent=2)
+        with open(self.file, "w") as f:
+            json.dump(self.data, f, indent=2)
 
-  def get_current_release_candidate(self):
-    return str(self.stage["release-candidate"]["current"])
+    def get_current_release_candidate(self):
+        return str(self.stage["release-candidate"]["current"])

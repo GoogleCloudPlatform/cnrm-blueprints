@@ -1,0 +1,14 @@
+apiVersion: container.cnrm.cloud.google.com/v1alpha2
+kind: ContainerCluster
+metadata:
+  clusterName: "PROJECT_ID/us-central1-c/gke-cluster" # {"$ref":"#/definitions/io.k8s.cli.substitutions.cluster-name"}
+  name: "gke-cluster" # {"$ref":"#/definitions/io.k8s.cli.setters.gcloud.container.cluster"}
+  namespace: "PROJECT_ID" # {"$ref":"#/definitions/io.k8s.cli.setters.gcloud.core.project"}
+spec:
+  location: us-central1-c # {"$ref":"#/definitions/io.k8s.cli.setters.gcloud.compute.location"}
+  loggingService: logging.googleapis.com/kubernetes
+  monitoringService: monitoring.googleapis.com/kubernetes
+  network: default # {"$ref":"#/definitions/io.k8s.cli.setters.gcloud.compute.network"}
+  subnetwork: default # {"$ref":"#/definitions/io.k8s.cli.setters.gcloud.compute.subnetwork"}
+  releaseChannel:
+    channel: REGULAR # {"$ref":"#/definitions/io.k8s.cli.setters.gcloud.container.cluster.releaseChannel"}

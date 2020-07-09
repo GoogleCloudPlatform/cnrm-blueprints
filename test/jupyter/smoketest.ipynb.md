@@ -2,11 +2,14 @@
 state = {
     "project": "anthos-blueprints-validation",
     "project_number": "1074580744525",
-    "anthoscli_version": "0.1.10"
+    "location": "us-central1-c",
+    "anthoscli_version": "0.1.10",
+    "kustomize_version": "3.6.1",
+    "kpt_version": "0.24.0",
+    "gcloud_version": "287.0.0"
 }
 
 import os
-import re
 import sys
 import tempfile
 sys.path.insert(0, os.path.abspath('../lib'))
@@ -20,6 +23,7 @@ from gcloud import *
 from git import *
 from kpt import *
 from kubectl import *
+from kustomize import *
 from random import randint
 from rc import *
 
@@ -42,8 +46,6 @@ if not branch:
 
 
 ```python
-if not "gcloud_version" in state:
-    update_state(state, { "gcloud_version": "287.0.0" }) # TODO: how to query latest version?
 gcloud = download_gcloud(state["gcloud_version"])
 gcloud
 ```
@@ -69,17 +71,18 @@ if not commit_sha:
 
 updated_files = git.get_changed_files(commit_sha)
 
-# TODO: Do not filter out patch packages. Instead, add validation to the patch packages using anthoscli export and kustomize
-packages = UpdatedPackages(clone_directory, updated_files).filter_out_patch_packages()
+updated_packages = UpdatedPackages(clone_directory, updated_files)
 
-if len(packages) == 0:
+if len(updated_packages.packages) == 0:
   print("No Blueprints are updated with commit %s" % commit_sha)
   update_state(state, {"new_rc": False})
   # test infrastructure update, only run one package for validation
   defaultBlueprint = ["asm-1.5"]
-  packages = UpdatedPackages(clone_directory, defaultBlueprint).filter_out_patch_packages()
+  updated_packages = UpdatedPackages(clone_directory, defaultBlueprint)
 else:
   update_state(state, {"new_rc": True})
+
+packages = updated_packages.packages
 print("The packages to be validated:")
 print(packages)
 
@@ -133,15 +136,12 @@ workdir = workspace_dir()
 statedir = os.path.join(workdir, "my-anthos")
 os.makedirs(statedir, exist_ok=True)
 
-if not "kpt_version" in state:
-    update_state(state, { "kpt_version": "0.24.0" }) # TODO: How to get latest?
-
 kpt = download_kpt(state["kpt_version"], gcloud=gcloud, statedir=statedir) # TODO: How to get tagged version?
 gcloud.add_to_path(kpt.env)
 kpt
 ```
 
-#### Configure project, zone etc.
+#### Configure project, location etc.
 
 
 ```python
@@ -156,30 +156,8 @@ state["project"]
 
 
 ```python
-if not "zone" in state:
-    update_state(state, { "zone": "us-central1-f" })
-```
-
-
-```python
 save_state(state)
 state
-```
-
-#### Get the submodule's kpt packages
-
-
-```python
-clusters = []
-for package_path in packages:
-  cluster_name = "btc-%s" % randint(0, 100) #btc stands for blueprints-test-cluster
-  package_full_path = "%s.git/%s" % (repo_url, package_path)
-  kpt.get(package_full_path, cluster_name)
-  for setter in packages[package_path].setters:
-    if "gcloud.container.cluster" == setter or "cluster-name" in setter:
-      kpt.set(cluster_name, setter, cluster_name)
-  kpt.list(cluster_name)
-  clusters.append(cluster_name)
 ```
 
 #### vet the manifest using anthoscli
@@ -187,14 +165,78 @@ for package_path in packages:
 
 ```python
 anthoscli.vet(statedir)
+anthoscli.env["ANTHOSCLI_STRICT_MODE"] = ""
+
 ```
 
-#### Apply it using anthoscli
+#### Install kustomize
 
 
 ```python
-anthoscli.env["ANTHOSCLI_STRICT_MODE"] = ""
+kustomize = download_kustomize(state["kustomize_version"])
+kustomize.version()
+```
+
+#### Prepare the existing clusters for patch packages
+
+
+```python
+patch_packages = updated_packages.filter_patch_packages()
+patch_cluster_names = {}
+for p, pkg in patch_packages.items():
+  cluster_name = "btc-%s" % randint(0, 100) #btc stands for blueprints-test-cluster
+  existing_package_path = "%s.git/%s" % (repo_url, "test/gke-cluster")
+  kpt.get(existing_package_path, cluster_name)
+  patch_cluster_names[pkg.name] = cluster_name
+  for setter in pkg.setters:
+    if "gcloud.container.cluster" == setter or "cluster-name" in setter:
+      kpt.set(cluster_name, setter, cluster_name)
+  kpt.list(cluster_name)
+
 anthoscli.apply(statedir)
+
+```
+
+#### Get the kpt packages
+
+
+```python
+clusters = []
+for package_path, pkg in packages.items():
+  package_full_path = "%s.git/%s" % (repo_url, package_path)
+  if pkg.is_patch:
+    cluster_name = patch_cluster_names[pkg.name]
+    existing_output_dir = "%s/%s" % (statedir, cluster_name)
+    gcloud.describe_project(state["project"])
+    anthoscli.export(cluster_name, state["project"], state["location"], existing_output_dir)
+    exec(["cat", "%s/all.yaml" % existing_output_dir])
+    patch_path = "%s-%s" % (pkg.name, os.path.basename(package_path))
+    patch_full_path = "%s/%s" % (statedir, patch_path)
+    kpt.get(package_full_path, patch_path)
+    kpt.set(patch_path, "base-dir", "../%s" % cluster_name)
+    kpt.list(patch_path)
+    for setter in pkg.setters:
+        if "gcloud.container.cluster" == setter or "cluster-name" in setter:
+          kpt.set(patch_path, setter, cluster_name)
+    kustomize.create_with_namespace(state["project"], existing_output_dir)
+    kustomize.build("%s/all.yaml" % existing_output_dir, patch_full_path)
+    exec(["rm", "-rf", patch_full_path])
+  else:
+    cluster_name = "btc-%s" % randint(0, 100) #btc stands for blueprints-test-cluster
+    kpt.get(package_full_path, cluster_name)
+    for setter in pkg.setters:
+      if "gcloud.container.cluster" == setter or "cluster-name" in setter:
+        kpt.set(cluster_name, setter, cluster_name)
+    kpt.list(cluster_name)
+  clusters.append(cluster_name)
+```
+
+#### Apply it using anthoscli sequentially. It has to be sequential, otherwise anthoscli will complain about duplicate objects
+
+
+```python
+for cluster in clusters:
+  anthoscli.apply("%s/%s" %(statedir, cluster))
 ```
 
 #### Perform some basic sanity checks 
@@ -204,13 +246,13 @@ anthoscli.apply(statedir)
 has_failure = False
 
 for cluster_name in clusters:
-  cluster = gcloud.describe_gke_cluster(state["zone"], cluster_name)
+  cluster = gcloud.describe_gke_cluster(state["location"], cluster_name)
   cluster
   status = cluster.get("status")
   if status != "RUNNING":
     has_failure = True
   else:
-    gcloud.get_gke_cluster_creds(cluster_name, state["zone"], state["project"])
+    gcloud.get_gke_cluster_creds(cluster_name, state["location"], state["project"])
     checks = kubectl.exec(["wait", "--for=condition=available", "--timeout=600s", "deployment", "--all", "--all-namespaces"])
     print(checks)
     if "error" in checks or "timed out" in checks:
@@ -231,7 +273,7 @@ save_state(state)
 
 ```python
 for cluster_name in clusters:
-  gcloud.delete_gke_cluster(state["zone"], cluster_name)
+  gcloud.delete_gke_cluster(state["location"], cluster_name)
 
 ```
 
@@ -240,7 +282,7 @@ for cluster_name in clusters:
 
 ```python
 if state["success"]:
-  if state["new-rc"]:
+  if state["new_rc"]:
     git.checkout(branch)
     release_candidate.update_release_candidate()
     new_tag = release_candidate.get_current_release_candidate()
