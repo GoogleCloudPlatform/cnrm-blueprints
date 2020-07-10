@@ -2,40 +2,82 @@
 
 This repository sets up a central qualification framework for blueprint releases
 (e.g. Anthos Service Mesh) to guarantee they work for a particular version of Anthos CLI.
-It provides a continuous integration pipeline to monitor new blueprint release tags,
+It provides a continuous integration pipeline to monitor new blueprint releases,
 trigger integration tests for validation, and eventually tag the release candidate
 for all blueprints.
 
+The framework supports blueprints as submodules, as well as subdirectories in the central repository.
+
 ## Validation Workflow
 
-Each individual blueprint will be a submodule of this repository, such as ASM, CI/CD, multi-tenancy, and etc.
+The workflow leverages the [Jupyter-based](https://jupyter.org/) test approach and
+run it on [Google Cloud Build](https://cloud.google.com/cloud-build/docs).
 
-The workflow depends on [Cloud Build](https://cloud.google.com/cloud-build/docs) setup on both the blueprint repo and this main repo.
+![workflow image](docs/images/workflow.png)
 
-The diagram shows the workflow: ![workflow image](docs/images/workflow.jpg)
+The diagram shows the workflow and covers the following scenarios:
+1. A blueprint is managed by a separate repository and is released via release tags
+2. A blueprint is managed by a separate repository and is released via release branches
+3. A blueprint resides in the same repository
 
-1. A blueprint release is published
-2. The release tag triggers a cloud build
-3. The cloud build task updates the submodule and pushes up the changes to this repo
-4. The changes in this repo triggers another cloud build
-5. The cloud build runs the end-to-end tests using Jupyter-based framework
-6. An anthoscli tag is generated if the tests pass
+For the first two cases, the blueprints will be linked as submodules of the main repository.
+A cloud build configuration file will be set up in each blueprint repository.
+Whenever a new release is published, the cloud build will update the submodule in the main repository.
+Then a second cloud build will be kicked off to run the validation tests.
+A new release tag of the main repository will be published if all tests look good.
 
+The blueprints, the Anthos CLI versions and the format of the new release tag are defined in the [anthoscli-release-candidates.json](anthoscli-release-candidates.json) file.
 
 ## How to add new Blueprints
 
-The blueprint owners need to setup a cloud build similar as [this](https://github.com/nan-yu/anthos-service-mesh-packages/blob/standard-release-process/cloudbuild.yaml).
+### 1. Blueprints managed by separate repositories
 
-Then the owners can create a pull request to add the blueprint repo as a submodule:
-```bash
-git submodule add YOUR_BLUEPRINT_REPO_URL
-```
+The blueprint owners need to setup CloudBuild configuration
+- Copy the template: [blueprint-cloudbuild.yaml](test/templates/blueprint-cloudbuild.yaml) to the root directory of the blueprint repository and rename it to cloudbuild.yaml
+- Copy [id_rsa.enc](test/ssh/id_rsa.enc) to the root directory of the blueprint repository
+- Copy [know_hosts](test/ssh/known_hosts) to the root directory of the blueprint repository
+- Push the changes to the blueprint repository: `git add -u && git commit -m "Setup CloudBuild configuration for the qualification framework" && git push origin <BRANCH>`
+- Connect CloudBuild to the blueprint repository [link](https://pantheon.corp.google.com/cloud-build/triggers/connect?project=anthos-blueprints-validation&organizationId=433637338589)
+- Create a trigger [link](https://pantheon.corp.google.com/cloud-build/triggers/add?project=anthos-blueprints-validation&organizationId=433637338589)
+  - `Name`: the name of the trigger, e.g. `ASM-release-trigger`
+  - `Description`: the description of the trigger, e.g. `The CloudBuild release trigger for ASM package`
+  - `Event`: it depends on the release strategy.
+    - If the blueprint publishes releases via tags, set `Event` to `Push new tag` and in the `Source` section, use a regular expression to match to the release tag format, e.g. `^v\d+.\d+.\d+$`.
+    - If the blueprint publishes releases via release branches, set `Event` to `Push to a branch` and in the `Source` section, use a regular expression to match to the branch, e.g. `^release-\d+.\d+-asm$`
+  - `Source`: select the corresponding `Repository`
+  - `Build Configuration File Type`: set to `Cloud Build configuration file (yaml or json)` and verify the `Cloud Build configuration file location`
+  - Click the `CREATE` button to create the trigger
+  - **Note**: in the release branch case, please create a trigger per release branch. If you have N release branches, N CloudBuild triggers need to be created.
+
+The blueprint owners need to create a pull request to add the blueprint repository as a submodule
+- Clone the cnrm-blueprints repo: `git clone git@github.com:GoogleCloudPlatform/cnrm-blueprints.git --recursive`
+- Add the current blueprint as a submodule: it depends on the release strategy. If it uses release branches, a submodule needs to be added per release branch.
+  - release tags: `git submodule add --name <NAME> <BLUEPRINT_REPO_URL> <PATH>`. e.g. `git submodule add --name asm git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm`
+  - release branches: `git submodule add -b <BRANCH> --name <NAME> <BLUEPRINT_REPO_URL> <PATH>`. e.g.
+    ```
+    git submodule add -b release-1.4-asm --name asm-1.4 git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm-1.4
+    git submodule add -b release-1.5-asm --name asm-1.5 git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm-1.5
+    git submodule add -b release-1.6-asm --name asm-1.6 git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm-1.6
+    ```
+- Add the submodule PATH to the `blueprints` list in [anthoscli-release-candidates.json](anthoscli-release-candidates.json) to include the new blueprint
+- Create a commit: `git add -u && git commit -m "Add XXX blueprint as a submodule"`
+- Push up the commit to a fork or a separate branch: e.g. `git checkout -b submodule && git push origin submodule`
+- Create a Pull Request
+
+
+### 2. Blueprints reside in the same repository
+
+- Add the blueprint packages to a separate subdirectory
+- Add the subdirectory name to the `blueprints` list in [anthoscli-release-candidates.json](anthoscli-release-candidates.json) to include the new blueprint
+- Create a commit: `git add -u && git commit -m "Add XXX blueprint as a subdirectory"`
+- Push up the commit to a fork or a separate branch: e.g. `git checkout -b subdirectory && git push origin subdirectory`
+- Create a Pull Request
 
 ## Validation Monitoring
 
-The cloud build history for validation is listed under the `anthos-blueprints-validation project.
+The cloud build history for validation is listed under the `anthos-blueprints-validation` project: [link](https://pantheon.corp.google.com/cloud-build/builds?organizationId=433637338589&project=anthos-blueprints-validation).
 
-The release candidates for anthoscli verified blueprints are listed [here](https://github.com/GoogleCloudPlatform/blueprints/releases)
+The release candidates for Anthos CLI verified blueprints are listed [here](https://github.com/GoogleCloudPlatform/blueprints/releases)
 
 
 ## Contributing

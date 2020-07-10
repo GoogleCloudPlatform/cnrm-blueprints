@@ -12,7 +12,7 @@ steps:
   - --ciphertext-file=id_rsa.enc
   - --plaintext-file=/root/.ssh/id_rsa
   - --location=global
-  - --keyring=blueprints-cb-keyring
+  - --keyring=cnrm-blueprints-cb-keyring
   - --key=github-key
   volumes:
   - name: 'ssh'
@@ -60,26 +60,26 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   args:
   - clone
-  - ${_BLUEPRINTS_REPO_URL}
-  - ${_BLUEPRINTS_REPO_NAME}
+  - ${_CNRM_BLUEPRINTS_REPO_URL}
+  - ${_CNRM_BLUEPRINTS_REPO_NAME}
   - --recursive
   volumes:
   - name: 'ssh'
     path: /root/.ssh
 
-# Update the blueprints repository if current repo is updated
+# Update the cnrm-blueprints repository if current repo is updated
 - name: 'gcr.io/cloud-builders/git'
   entrypoint: 'bash'
   args:
   - '-c'
   - |
     sha=$(git submodule status $REPO_NAME | grep $(cat ${COMMIT_SHA}))
-    if [[ -z $sha ]]; then git submodule update --remote && git add -u && git commit -m "Update the submodule: $REPO_NAME/tags/${TAG_NAME}" && git push origin master; fi
-  dir: ${_BLUEPRINTS_REPO_NAME}
+    if [[ -z $sha ]]; then git submodule update --remote && git add -u && git commit -m "Update the submodule: $REPO_NAME" && git push origin master; fi
+  dir: ${_CNRM_BLUEPRINTS_REPO_NAME}
   volumes:
   - name: 'ssh'
     path: /root/.ssh
 
 substitutions:
-  _BLUEPRINTS_REPO_URL: 'git@github.com:GoogleCloudPlatform/blueprints.git'
-  _BLUEPRINTS_REPO_NAME: 'blueprints'
+  _CNRM_BLUEPRINTS_REPO_URL: 'git@github.com:GoogleCloudPlatform/cnrm-blueprints.git'
+  _CNRM_BLUEPRINTS_REPO_NAME: 'cnrm-blueprints'
