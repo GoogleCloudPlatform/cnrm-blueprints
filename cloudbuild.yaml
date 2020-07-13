@@ -41,5 +41,5 @@ artifacts:
              '/workspace/artifacts/*',
            ]
 substitutions:
-  _ARTIFACT_LOCATION: 'gs://test-results-anthoscli'
+  _ARTIFACT_LOCATION: 'gs://cnrm-blueprints-validation-result'
   _GCS_TRUSTED_MIRROR: 'gs://anthoscli-test-cloudbuild-mirror'
