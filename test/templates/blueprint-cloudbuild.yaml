@@ -73,7 +73,7 @@ steps:
   args:
   - '-c'
   - |
-    sha=$(git submodule status $REPO_NAME | grep $(cat ${COMMIT_SHA}))
+    sha=$(git submodule status ${_CNRM_BLUEPRINTS_SUBMODULE_PATH} | grep ${COMMIT_SHA})
     if [[ -z $sha ]]; then git submodule update --remote && git add -u && git commit -m "Update the submodule: $REPO_NAME" && git push origin master; fi
   dir: ${_CNRM_BLUEPRINTS_REPO_NAME}
   volumes:
@@ -83,3 +83,4 @@ steps:
 substitutions:
   _CNRM_BLUEPRINTS_REPO_URL: 'git@github.com:GoogleCloudPlatform/cnrm-blueprints.git'
   _CNRM_BLUEPRINTS_REPO_NAME: 'cnrm-blueprints'
+  _CNRM_BLUEPRINTS_SUBMODULE_PATH: 'YOUR_SUBMODULE_PATH_OF_THE_CNRM_BLUEPRINTS_REPO'

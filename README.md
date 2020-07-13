@@ -33,7 +33,8 @@ The blueprints, the Anthos CLI versions and the format of the new release tag ar
 ### 1. Blueprints managed by separate repositories
 
 The blueprint owners need to setup CloudBuild configuration
-- Copy the template: [blueprint-cloudbuild.yaml](test/templates/blueprint-cloudbuild.yaml) to the root directory of the blueprint repository and rename it to cloudbuild.yaml
+- Copy the template: [blueprint-cloudbuild.yaml](test/templates/blueprint-cloudbuild.yaml) to the root directory of the blueprint repository, rename it to cloudbuild.yaml
+- Update `_CNRM_BLUEPRINTS_SUBMODULE_PATH` with the correct SUBMODULE_PATH in the [cloudbuild.yaml]((test/templates/blueprint-cloudbuild.yaml#L86)) file
 - Copy [id_rsa.enc](test/ssh/id_rsa.enc) to the root directory of the blueprint repository
 - Copy [know_hosts](test/ssh/known_hosts) to the root directory of the blueprint repository
 - Push the changes to the blueprint repository: `git add -u && git commit -m "Setup CloudBuild configuration for the qualification framework" && git push origin <BRANCH>`
@@ -52,14 +53,14 @@ The blueprint owners need to setup CloudBuild configuration
 The blueprint owners need to create a pull request to add the blueprint repository as a submodule
 - Clone the cnrm-blueprints repo: `git clone git@github.com:GoogleCloudPlatform/cnrm-blueprints.git --recursive`
 - Add the current blueprint as a submodule: it depends on the release strategy. If it uses release branches, a submodule needs to be added per release branch.
-  - release tags: `git submodule add --name <NAME> <BLUEPRINT_REPO_URL> <PATH>`. e.g. `git submodule add --name asm git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm`
-  - release branches: `git submodule add -b <BRANCH> --name <NAME> <BLUEPRINT_REPO_URL> <PATH>`. e.g.
+  - release tags: `git submodule add --name <NAME> <BLUEPRINT_REPO_URL> <SUBMODULE_PATH>`. e.g. `git submodule add --name asm git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm`
+  - release branches: `git submodule add -b <BRANCH> --name <NAME> <BLUEPRINT_REPO_URL> <SUBMODULE_PATH>`. e.g.
     ```
     git submodule add -b release-1.4-asm --name asm-1.4 git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm-1.4
     git submodule add -b release-1.5-asm --name asm-1.5 git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm-1.5
     git submodule add -b release-1.6-asm --name asm-1.6 git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git asm-1.6
     ```
-- Add the submodule PATH to the `blueprints` list in [anthoscli-release-candidates.json](anthoscli-release-candidates.json) to include the new blueprint
+- Add the SUBMODULE_PATH to the `blueprints` list in [anthoscli-release-candidates.json](anthoscli-release-candidates.json) to include the new blueprint
 - Create a commit: `git add -u && git commit -m "Add XXX blueprint as a submodule"`
 - Push up the commit to a fork or a separate branch: e.g. `git checkout -b submodule && git push origin submodule`
 - Create a Pull Request
