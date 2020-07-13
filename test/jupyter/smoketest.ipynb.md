@@ -56,7 +56,7 @@ gcloud
 ```python
 gcloud.decrypt_key(["kms", "decrypt", "--ciphertext-file=/root/.ssh/id_rsa.enc",
                     "--plaintext-file=/root/.ssh/id_rsa", "--location=global",
-                    "--keyring=blueprints-cb-keyring", "--key=github-key"])
+                    "--keyring=cnrm-blueprints-cb-keyring", "--key=github-key"])
 
 repo_url = "git@github.com:GoogleCloudPlatform/%s" % repo
 git_user_email = "anthos-blueprints-validation-bot@google.com"

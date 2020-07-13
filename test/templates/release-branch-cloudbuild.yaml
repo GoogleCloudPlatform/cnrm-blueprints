@@ -12,7 +12,7 @@ steps:
   - --ciphertext-file=id_rsa.enc
   - --plaintext-file=/root/.ssh/id_rsa
   - --location=global
-  - --keyring=blueprints-cb-keyring
+  - --keyring=cnrm-blueprints-cb-keyring
   - --key=github-key
   volumes:
   - name: 'ssh'
