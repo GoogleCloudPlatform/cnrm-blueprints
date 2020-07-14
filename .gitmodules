@@ -1,0 +1,12 @@
+[submodule "asm-1.4"]
+	path = asm-1.4
+	url = git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git
+	branch = release-1.4-asm
+[submodule "asm-1.5"]
+	path = asm-1.5
+	url = git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git
+	branch = release-1.5-asm
+[submodule "asm-1.6"]
+	path = asm-1.6
+	url = git@github.com:GoogleCloudPlatform/anthos-service-mesh-packages.git
+	branch = release-1.6-asm
