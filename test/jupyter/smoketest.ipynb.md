@@ -94,7 +94,8 @@ for k, v in packages.items():
 if len(anthoscli_versions) == 0:
   raise Exception("No Anthoscli versions found. Please check anthoscli-release-candidates.json file and make sure the blueprints are added.")
 if len(anthoscli_versions) > 1:
-  raise Exception("Multiple Anthoscli versions found for the updated packages!")
+  print("WARNING: multiple Anthoscli versions found for the updated packages!")
+  print("Only run validation against the first package")
 anthoscli_version = list(anthoscli_versions)[0]
 print("anthoscli_version: %s" % anthoscli_version)
 
