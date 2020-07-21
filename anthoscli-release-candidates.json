@@ -18,8 +18,8 @@
     ],
     "anthoscli-version": "0.1.10",
     "release-candidate": {
-      "current": "anthoscli-beta-rc1",
-      "next": "anthoscli-beta-rc2"
+      "current": "anthoscli-beta-rc2",
+      "next": "anthoscli-beta-rc3"
     }
   }
 ]
