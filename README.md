@@ -1,4 +1,7 @@
-# Blueprints
+# ASM Blueprints
+
+## NOTE: This repository was developed for use with `anthoscli` and is no longer maintained.
+## For other blueprints, check the [blueprints repository](https://github.com/GoogleCloudPlatform/blueprints).
 
 This repository sets up a central qualification framework for blueprint releases
 (e.g. Anthos Service Mesh) to guarantee they work for a particular version of Anthos CLI.
